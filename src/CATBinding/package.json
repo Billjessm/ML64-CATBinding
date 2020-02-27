@@ -1,0 +1,15 @@
+{
+  "name": "CATBinding",
+  "version": "1.0.0",
+  "description": "",
+  "main": "CATBinding.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "denoflions",
+  "credits": "Nokaubure",
+  "license": "ISC",
+  "core": "OcarinaofTime",
+  "updateUrl": "https://nexus.inpureprojects.info/ModLoader64/mods/CatBinding/update/update.json"
+}

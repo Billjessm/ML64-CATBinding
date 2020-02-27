@@ -1,0 +1,5 @@
+modloader64-config.json
+build/
+CustomActorToolkit/
+dist/
+node_modules/
