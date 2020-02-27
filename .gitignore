@@ -3,3 +3,4 @@ build/
 CustomActorToolkit/
 dist/
 node_modules/
+example.ovl
