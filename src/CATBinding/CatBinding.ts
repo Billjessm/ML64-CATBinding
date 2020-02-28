@@ -3,13 +3,13 @@ import { EventHandler, EventsClient } from 'modloader64_api/EventHandler';
 import fse from 'fs-extra';
 import path from 'path';
 import child_process from 'child_process';
-import { PayloadType } from 'modloader64_api/PayloadType';
 import fs from 'fs';
 import { IOOTCore } from 'modloader64_api/OOT/OOTAPI';
 import { InjectCore } from 'modloader64_api/CoreInjection';
 import { IActor } from 'modloader64_api/OOT/IActor';
 import { Command } from 'modloader64_api/OOT/ICommandBuffer';
 import { IPosition } from 'modloader64_api/OOT/IPosition';
+import IMemory from 'modloader64_api/IMemory';
 
 const actor_ovl_size: Map<string, number> = new Map<string, number>();
 
@@ -37,12 +37,9 @@ interface ovl_meta {
     forceSlot: string;
 }
 
-export class OverlayHotloadPayload extends PayloadType {
-    constructor(ext: string) {
-        super(ext);
-    }
+export class OverlayHotloadPayload {
 
-    parse(file: string, buf: Buffer, dest: Buffer) {
+    parse(file: string, buf: Buffer, dest: IMemory) {
         console.log('Trying to allocate actor...');
         let overlay_start: number = global.ModLoader['overlay_table'];
         let finder: find_init = new find_init();
@@ -63,12 +60,12 @@ export class OverlayHotloadPayload extends PayloadType {
         console.log(
             'Assigning ' + path.parse(file).base + ' to slot ' + slot + '.'
         );
-        dest.writeUInt32BE(0x80000000 + addr, slot * 0x20 + overlay_start + 0x14);
+        dest.rdramWrite32(0x80000000 + addr, slot * 0x20 + overlay_start + 0x14);
         buf.writeUInt8(slot, offset + 0x1);
         if (actor_ovl_size.has(file)) {
-            Buffer.alloc(actor_ovl_size.get(file)!).copy(dest);
+            dest.rdramWriteBuffer(addr, Buffer.alloc(actor_ovl_size.get(file)!));
         }
-        buf.copy(dest, parseInt(meta.addr));
+        dest.rdramWriteBuffer(parseInt(meta.addr), buf)
         return slot;
     }
 }
@@ -201,10 +198,8 @@ class CatBinding implements IPlugin {
         let ovl = this.compileActor(path.resolve(file), path.resolve(path.join(path.parse(file).dir, path.parse(file).name + ".ovl")), path.resolve(path.join(path.parse(file).dir, path.parse(file).name + '.json')));
         let buf: Buffer = fse.readFileSync(ovl);
         actor_ovl_size.set(file, buf.byteLength);
-        let payload: OverlayHotloadPayload = new OverlayHotloadPayload(".ovl");
-        let ram = this.ModLoader.emulator.rdramReadBuffer(0x0, 16 * 1024 * 1024);
-        this.relevant_ids.push(payload.parse(file, buf, ram));
-        this.ModLoader.emulator.rdramWriteBuffer(0x0, ram);
+        let payload: OverlayHotloadPayload = new OverlayHotloadPayload();
+        this.relevant_ids.push(payload.parse(file, buf, this.ModLoader.emulator));
         this.ModLoader.utils.memoryCacheRefresh();
     }
 
